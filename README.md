@@ -18,24 +18,28 @@ Deploy **Grafana OSS** to [Railway](https://railway.app) with one click. Postgre
 
 ## One-Click Deploy
 
-Click the **Deploy on Railway** button above. Both Grafana and PostgreSQL will be created automatically.
+Click the **Deploy on Railway** button above. Both Grafana and PostgreSQL will be created automatically — **zero configuration required**.
 
 1. Wait 1–2 minutes for initialization
 2. Open your Grafana service URL
-3. Login with `admin` / `admin`
+3. Check **Deploy Logs** for your auto-generated admin password
+4. Login with `admin` and the generated password
 
-> **Security**: Change the default password after first login!
+> **Tip**: Set `GF_SECURITY_ADMIN_PASSWORD` in Railway variables to use a fixed password across redeploys.
 
 ## Environment Variables
+
+All variables are auto-configured. Override any of them in Railway service variables if needed.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | Auto-wired | `${{Postgres.DATABASE_URL}}` |
 | `PORT` | `3000` | Server port (auto-set by Railway) |
 | `GF_SECURITY_ADMIN_USER` | `admin` | Admin username |
-| `GF_SECURITY_ADMIN_PASSWORD` | `admin` | Admin password |
-| `GF_DEFAULT_INSTANCE_NAME` | `my-instance` | Instance name |
-| `GF_INSTALL_PLUGINS` | — | Comma-separated plugin list |
+| `GF_SECURITY_ADMIN_PASSWORD` | Auto-generated | Secure random password (printed in deploy logs) |
+| `GF_DEFAULT_INSTANCE_NAME` | Auto-detected | Uses `RAILWAY_PROJECT_NAME` or `grafana` |
+| `GF_LOG_MODE` | `console` | Log output mode |
+| `GF_INSTALL_PLUGINS` | — | Comma-separated plugin list (optional) |
 
 ## Installing Plugins
 
