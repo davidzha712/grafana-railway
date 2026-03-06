@@ -39,6 +39,7 @@ jobs:
         if: steps.latest.outputs.version != steps.current.outputs.version
         uses: peter-evans/create-pull-request@v7
         with:
+          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           commit-message: "chore: track Grafana ${{ steps.latest.outputs.version }}"
           title: "chore: Grafana ${{ steps.latest.outputs.version }} available"
           body: |
