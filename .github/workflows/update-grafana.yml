@@ -18,7 +18,7 @@ jobs:
       - name: Get latest Grafana version
         id: latest
         run: |
-          LATEST=$(curl -s https://api.github.com/repos/grafana/grafana/releases/latest | jq -r '.tag_name' | sed 's/^v//')
+          LATEST=$(curl -s https://api.github.com/repos/grafana/grafana/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'].lstrip('v'))")
           echo "version=$LATEST" >> "$GITHUB_OUTPUT"
 
       - name: Check current version
@@ -31,24 +31,25 @@ jobs:
           fi
           echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
 
-      - name: Update version file
+      - name: Update version file and create PR
         if: steps.latest.outputs.version != steps.current.outputs.version
-        run: echo "${{ steps.latest.outputs.version }}" > .grafana-version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "${{ steps.latest.outputs.version }}" > .grafana-version
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .grafana-version
+          git commit -m "chore: track Grafana ${{ steps.latest.outputs.version }}"
+          git push origin HEAD:chore/grafana-update-${{ steps.latest.outputs.version }} --force
+          gh pr create \
+            --title "chore: Grafana ${{ steps.latest.outputs.version }} available" \
+            --body "Grafana **${{ steps.latest.outputs.version }}** is now available.
 
-      - name: Create Pull Request
-        if: steps.latest.outputs.version != steps.current.outputs.version
-        uses: peter-evans/create-pull-request@v7
-        with:
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
-          commit-message: "chore: track Grafana ${{ steps.latest.outputs.version }}"
-          title: "chore: Grafana ${{ steps.latest.outputs.version }} available"
-          body: |
-            Grafana **${{ steps.latest.outputs.version }}** is now available.
+Since this template uses \`grafana/grafana-oss:latest\`, the next Railway deployment will automatically pull the new version.
 
-            Since this template uses `grafana/grafana-oss:latest`, the next Railway deployment will automatically pull the new version.
+This PR updates the version tracking file for reference.
 
-            This PR updates the version tracking file for reference.
-
-            [Release Notes](https://github.com/grafana/grafana/releases/tag/v${{ steps.latest.outputs.version }})
-          branch: chore/grafana-update
-          delete-branch: true
+[Release Notes](https://github.com/grafana/grafana/releases/tag/v${{ steps.latest.outputs.version }})" \
+            --base main \
+            --head chore/grafana-update-${{ steps.latest.outputs.version }} || echo "PR may already exist"
