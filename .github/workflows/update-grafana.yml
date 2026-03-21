@@ -15,11 +15,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install GitHub CLI
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg \
+          && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null \
+          && sudo apt update \
+          && sudo apt install gh -y
+
       - name: Get latest Grafana version
         id: latest
         run: |
           LATEST=$(curl -s https://api.github.com/repos/grafana/grafana/releases/latest | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['tag_name'].lstrip('v'))")
           echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Latest Grafana version: $LATEST"
 
       - name: Check current version
         id: current
@@ -30,12 +40,14 @@ jobs:
             CURRENT="unknown"
           fi
           echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "Current tracked version: $CURRENT"
 
       - name: Update version file and create PR
         if: steps.latest.outputs.version != steps.current.outputs.version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "Updating from ${{ steps.current.outputs.version }} to ${{ steps.latest.outputs.version }}"
           echo "${{ steps.latest.outputs.version }}" > .grafana-version
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
